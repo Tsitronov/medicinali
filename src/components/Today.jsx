@@ -220,7 +220,7 @@ function Today() {
           <strong> ‼️ In ritardo! Prendilo il prima possibile: </strong>
           {overdue.map((r) => (
             <div key={`${r.name}-${r.time}`} className="reminder-item">
-              <strong>{r.name}</strong> (was scheduled at {r.time})
+              <strong>{r.name}</strong> (era programmato per {r.time})
             </div>
           ))}
         </div>

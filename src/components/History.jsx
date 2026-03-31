@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { loadData } from "../services/storage";
+import { useLang } from "../i18n";
 
 function History() {
+  const { t } = useLang();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,7 +14,7 @@ function History() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Errore nel caricamento dello storico:", err);
+        console.error("Error loading history:", err);
         setLoading(false);
       });
   }, []);
@@ -20,8 +22,8 @@ function History() {
   if (loading) {
     return (
       <div>
-        <h2>Storico</h2>
-        <p>Caricamento in corso...</p>
+        <h2>{t.history.title}</h2>
+        <p>{t.history.loading}</p>
       </div>
     );
   }
@@ -29,13 +31,12 @@ function History() {
   if (history.length === 0) {
     return (
       <div>
-        <h2>Storico</h2>
-        <p>Nessuna assunzione registrata.</p>
+        <h2>{t.history.title}</h2>
+        <p>{t.history.empty}</p>
       </div>
     );
   }
 
-  // Raggruppamento per data
   const groupedByDate = history.reduce((acc, item) => {
     if (!acc[item.date]) {
       acc[item.date] = [];
@@ -46,7 +47,7 @@ function History() {
 
   return (
     <div>
-      <h2>Storico delle assunzioni</h2>
+      <h2>{t.history.fullTitle}</h2>
 
       {Object.keys(groupedByDate)
         .sort()
@@ -65,7 +66,7 @@ function History() {
                     borderRadius: "4px",
                   }}
                 >
-                  <strong>{entry.medicine}</strong> — ore {entry.time}
+                  <strong>{entry.medicine}</strong> — {t.history.at} {entry.time}
                 </li>
               ))}
             </ul>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Daily Routine Reminder</string>
+    <string name="title_activity_main">Daily Routine Reminder</string>
+    <string name="package_name">com.medicilali.app</string>
+    <string name="custom_url_scheme">com.medicilali.app</string>
+</resources>

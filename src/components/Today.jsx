@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { loadData, addHistoryEntry } from "../services/storage";  // ← added addHistoryEntry
+import { loadData, addHistoryEntry } from "../services/storage";
+import { useLang } from "../i18n";
 
 function Today() {
+  const { t } = useLang();
   const [medicines, setMedicines] = useState([]);
   const [history, setHistory] = useState([]);
   const [today, setToday] = useState(new Date().toISOString().split("T")[0]);
@@ -141,6 +143,62 @@ function Today() {
   // ────────────────────────────────────────────────
   // Notifications
 
+  const playBeep = () => {
+    const doBeep = () => {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [0, 0.3, 0.6].forEach((offset) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = 880;
+          gain.gain.setValueAtTime(0.4, ctx.currentTime + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.25);
+          osc.start(ctx.currentTime + offset);
+          osc.stop(ctx.currentTime + offset + 0.25);
+        });
+      } catch {}
+    };
+    doBeep();
+    setTimeout(doBeep, 10000);
+  };
+
+  const triggerNotification = (medicineName, time) => {
+    const key = `${today}-${medicineName}-${time}`;
+    if (triggeredRef.current[key] !== true) return;
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(t.notifications.timeTitle, {
+        body: `${medicineName} — ${time}`,
+        requireInteraction: true,
+        icon: "/icon-192.png",
+      });
+    }
+
+    playBeep();
+
+    if (navigator.vibrate) {
+      navigator.vibrate([400, 200, 400, 200, 400]);
+    }
+  };
+
+  const triggerOverdueNotification = (medicineName, time) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(t.notifications.overdueTitle, {
+        body: `${medicineName} — ${t.notifications.wasScheduled} ${time}`,
+        requireInteraction: true,
+        icon: "/icon-192.png",
+      });
+    }
+
+    playBeep();
+
+    if (navigator.vibrate) {
+      navigator.vibrate([600, 200, 600, 200, 600]);
+    }
+  };
+
   const checkMedicineTime = () => {
     const now = new Date();
     const currentTime =
@@ -151,6 +209,7 @@ function Today() {
     medicines.forEach((med) => {
       med.times.forEach((time) => {
         const key = `${today}-${med.name}-${time}`;
+        const overdueKey = `overdue-${today}-${med.name}-${time}`;
 
         if (
           time === currentTime &&
@@ -160,28 +219,17 @@ function Today() {
           triggeredRef.current[key] = true;
           triggerNotification(med.name, time);
         }
+
+        if (
+          getTimeStatus(time) === "overdue" &&
+          !isTaken(med.name, time) &&
+          !triggeredRef.current[overdueKey]
+        ) {
+          triggeredRef.current[overdueKey] = true;
+          triggerOverdueNotification(med.name, time);
+        }
       });
     });
-  };
-
-  const triggerNotification = (medicineName, time) => {
-    const key = `${today}-${medicineName}-${time}`;
-    if (triggeredRef.current[key] !== true) return;
-
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("💊 Time to take your medicine", {
-        body: `${medicineName} — ${time}`,
-        requireInteraction: true,
-        icon: "/icon-192.png",
-      });
-    }
-
-    const audio = new Audio("/notification.mp3");
-    audio.play().catch(() => {});
-
-    if (navigator.vibrate) {
-      navigator.vibrate([400, 200, 400]);
-    }
   };
 
   const markAsTaken = async (medicineName, time) => {
@@ -213,34 +261,34 @@ function Today() {
 
   return (
     <div className="today-container">
-      <h4 className="today-title"> Oggi </h4>
+      <h4 className="today-title">{t.today.title}</h4>
 
       {overdue.length > 0 ? (
         <div className="reminder-banner overdue-banner">
-          <strong> ‼️ In ritardo! Prendilo il prima possibile: </strong>
+          <strong>{t.today.overdueBanner}</strong>
           {overdue.map((r) => (
             <div key={`${r.name}-${r.time}`} className="reminder-item">
-              <strong>{r.name}</strong> (era programmato per {r.time})
+              <strong>{r.name}</strong> ({t.today.wasScheduled} {r.time})
             </div>
           ))}
         </div>
       ) : upcoming.length > 0 ? (
         <div className="reminder-banner">
-          💊 In arrivo:
+          {t.today.comingUpBanner}
           {upcoming.map((r) => (
             <div key={`${r.name}-${r.time}`} className="reminder-item">
-              <strong>{r.name}</strong> at {r.time}
+              <strong>{r.name}</strong> {t.today.at} {r.time}
             </div>
           ))}
         </div>
       ) : (
         <div className="all-done-banner">
-          🎉 Tutto preso per oggi!
+          {t.today.allDone}
         </div>
       )}
 
       {medicines.length === 0 ? (
-        <div className="empty-state"> Nessun medicinale aggiunto </div>
+        <div className="empty-state">{t.today.noMedicines}</div>
       ) : (
         medicines.map((med) => {
           const sortedTimes = [...med.times].sort();
@@ -253,17 +301,17 @@ function Today() {
                 const taken = isTaken(med.name, time);
                 const status = getTimeStatus(time);
 
-                let statusText = "⭕ In attesa di";
+                let statusText = t.today.waiting;
                 let rowClass = "";
 
                 if (taken) {
-                  statusText = "✅ Preso";
+                  statusText = t.today.taken;
                   rowClass = "taken";
                 } else if (status === "overdue") {
-                  statusText = "‼️ In ritardo! Prendilo il prima possibile: ";
+                  statusText = t.today.overdue;
                   rowClass = "overdue";
                 } else if (status === "active") {
-                  statusText = "💊 In arrivo:";
+                  statusText = t.today.comingUp;
                   rowClass = "active";
                 }
 
@@ -280,7 +328,7 @@ function Today() {
                         className="take-button"
                         onClick={() => markAsTaken(med.name, time)}
                       >
-                        Preso
+                        {t.today.takenBtn}
                       </button>
                     )}
                   </div>

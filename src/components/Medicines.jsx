@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { loadData, addMedicine, deleteMedicine } from "../services/storage";
+import { useLang } from "../i18n";
 
 function Medicines() {
+  const { t } = useLang();
   const [medicines, setMedicines] = useState([]);
   const [name, setName] = useState("");
   const [timesInput, setTimesInput] = useState("");
@@ -58,45 +60,49 @@ function Medicines() {
   };
 
   if (loading) {
-    return <div>Caricamento in corso...</div>;
+    return <div>{t.medicines.loading}</div>;
   }
 
   return (
-    <div>
-      <h2>Medicinali</h2>
+    <div className="medicines-container">
+      <h2 className="medicines-title">{t.medicines.title}</h2>
 
-      <div style={{ marginBottom: "16px" }}>
+      <div className="medicines-form">
         <input
+          className="medicines-input"
           type="text"
-          placeholder="Nome del medicinale"
+          placeholder={t.medicines.namePlaceholder}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
         <input
+          className="medicines-input"
           type="text"
-          placeholder="Orari (es. 08:00, 14:00, 20:00)"
+          placeholder={t.medicines.timesPlaceholder}
           value={timesInput}
           onChange={(e) => setTimesInput(e.target.value)}
         />
 
-        <button onClick={handleAddMedicine}>
-          Aggiungi
+        <button className="medicines-add-btn" onClick={handleAddMedicine}>
+          {t.medicines.add}
         </button>
       </div>
 
       {medicines.length === 0 ? (
-        <p>Nessun medicinale aggiunto.</p>
+        <p className="medicines-empty">{t.medicines.empty}</p>
       ) : (
-        <ul>
+        <ul className="medicines-list">
           {medicines.map((m) => (
-            <li key={m.id}>
-              <strong>{m.name}</strong> — {m.times.join(", ")}
+            <li key={m.id} className="medicines-item">
+              <span className="medicines-item-text">
+                <strong>{m.name}</strong> — {m.times.join(", ")}
+              </span>
               <button
+                className="medicines-delete-btn"
                 onClick={() => handleDeleteMedicine(m.id)}
-                style={{ marginLeft: "10px" }}
               >
-                Elimina
+                {t.medicines.delete}
               </button>
             </li>
           ))}

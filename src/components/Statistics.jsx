@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { loadData } from "../services/storage";
 import html2pdf from "html2pdf.js";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
+import { useLang } from "../i18n";
 
 function Statistics() {
+  const { t, lang } = useLang();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const reportRef = useRef();
@@ -52,7 +56,7 @@ function Statistics() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Errore nel calcolo delle statistiche:", err);
+        console.error("Error loading statistics:", err);
         setLoading(false);
       });
   }, []);
@@ -61,52 +65,59 @@ function Statistics() {
     if (!reportRef.current) return;
 
     const element = reportRef.current;
-
-    const originalStyle = {
-      position: element.style.position,
-      left: element.style.left,
-    };
-
+    const originalStyle = { position: element.style.position, left: element.style.left };
     element.style.position = "static";
     element.style.left = "0";
 
+    const fileName = `report-routine-${new Date().toISOString().split("T")[0]}.pdf`;
     const options = {
       margin: 10,
-      filename: `report-medicinali-${new Date().toISOString().split("T")[0]}.pdf`,
+      filename: fileName,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
     };
 
     try {
-      await html2pdf().set(options).from(element).save();
+      const base64 = await html2pdf().set(options).from(element).output("datauristring");
+      const base64Data = base64.split(",")[1];
+
+      await Filesystem.writeFile({
+        path: fileName,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+
+      const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
+
+      await Share.share({ title: t.statistics.shareTitle, url: uri, dialogTitle: t.statistics.shareDialog });
     } catch (err) {
-      console.error("Errore durante l'esportazione del PDF:", err);
+      console.error("Error exporting PDF:", err);
     } finally {
       element.style.position = originalStyle.position;
       element.style.left = originalStyle.left;
     }
   };
 
-  if (loading) return <p>Caricamento statistiche...</p>;
-  if (!stats) return <p>Nessun dato disponibile.</p>;
+  if (loading) return <p>{t.statistics.loading}</p>;
+  if (!stats) return <p>{t.statistics.noData}</p>;
 
-  const oggi = new Date().toLocaleDateString("it-IT");
+  const locale = lang === "it" ? "it-IT" : "en-GB";
+  const todayStr = new Date().toLocaleDateString(locale);
 
   return (
     <div>
-      <h2> Statistiche </h2>
+      <h2>{t.statistics.title}</h2>
 
       <p>
-        Oggi: {stats.takenToday} su {stats.totalToday} ({stats.percentToday}%)
+        {t.statistics.today}: {stats.takenToday} {t.statistics.of} {stats.totalToday} ({stats.percentToday}%)
       </p>
 
       <p>
-        Ultimi 7 giorni: {stats.takenWeek} su {stats.totalWeek} (
-        {stats.percentWeek}%)
+        {t.statistics.lastWeek}: {stats.takenWeek} {t.statistics.of} {stats.totalWeek} ({stats.percentWeek}%)
       </p>
 
-      <button onClick={exportPDF}>Esporta in PDF</button>
+      <button onClick={exportPDF}>{t.statistics.exportPdf}</button>
 
       {/* Hidden block for PDF generation */}
       <div
@@ -120,31 +131,29 @@ function Statistics() {
           fontFamily: "Arial, sans-serif",
         }}
       >
-        <h4>Report Medicinali</h4>
-        <p>Data: {oggi}</p>
+        <h4>{t.statistics.pdfTitle}</h4>
+        <p>{t.statistics.pdfDate}: {todayStr}</p>
 
-        <h5>Oggi ({oggi})</h5>
+        <h5>{t.statistics.today} ({todayStr})</h5>
         <p>
-          Assunzioni: {stats.takenToday} su {stats.totalToday} (
-          {stats.percentToday}%)
+          {t.statistics.pdfIntakes}: {stats.takenToday} {t.statistics.of} {stats.totalToday} ({stats.percentToday}%)
         </p>
 
-        <h5> Ultimi 7 giorni </h5>
+        <h5>{t.statistics.lastWeek}</h5>
         <p>
-          Assunzioni: {stats.takenWeek} su {stats.totalWeek} (
-          {stats.percentWeek}%)
+          {t.statistics.pdfIntakes}: {stats.takenWeek} {t.statistics.of} {stats.totalWeek} ({stats.percentWeek}%)
         </p>
 
-        <h5>Storico completo delle assunzioni</h5>
+        <h5>{t.statistics.pdfHistory}</h5>
         {stats.history.length === 0 ? (
-          <p>Nessuna registrazione.</p>
+          <p>{t.statistics.pdfNoRecords}</p>
         ) : (
           stats.history
             .sort((a, b) => new Date(b.date) - new Date(a.date))
             .map((entry) => (
               <div key={entry.id} style={{ marginBottom: "4px" }}>
-                {new Date(entry.date).toLocaleDateString("it-IT")} |{" "}
-                <strong>{entry.medicine}</strong> | ore {entry.time}
+                {new Date(entry.date).toLocaleDateString(locale)} |{" "}
+                <strong>{entry.medicine}</strong> | {entry.time}
               </div>
             ))
         )}

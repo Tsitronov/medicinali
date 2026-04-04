@@ -1,5 +1,20 @@
 {
   "appId": "com.medicilali.app",
   "appName": "Daily Routine Reminder",
-  "webDir": "dist"
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#ffffff"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "DEFAULT",
+      "backgroundColor": "#ffffff"
+    }
+  }
 }

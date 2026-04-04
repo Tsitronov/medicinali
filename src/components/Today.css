@@ -314,3 +314,68 @@ body {
   font-size: 20px;
   color: #888;
 }
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #121212;
+    color: #f1f1f1;
+  }
+  .app-header {
+    background: #1e1e1e;
+    border-bottom-color: #333;
+  }
+  .nav-bar {
+    background: #1e1e1e;
+    border-top-color: #333;
+  }
+  .nav-bar a {
+    color: #aaa;
+  }
+  .nav-bar a.active {
+    color: #4da6ff;
+  }
+  .medicine-card {
+    background: #1e1e1e;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  }
+  .medicine-name {
+    color: #e0e0e0;
+  }
+  .time-row {
+    background: #2a2a2a;
+  }
+  .time-row.taken {
+    background: #1b3a1f;
+  }
+  .time-row.next {
+    background: #3a3000;
+    border-color: #665500;
+  }
+  .empty-state {
+    background: #1e1e1e;
+    color: #aaa;
+  }
+  .today-title, .medicines-title {
+    color: #e0e0e0;
+  }
+  .medicines-item {
+    background: #1e1e1e;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .medicines-input {
+    background: #2a2a2a;
+    color: #f1f1f1;
+    border-color: #555;
+  }
+  .all-done-banner {
+    background: #1b3a1f;
+    color: #81c784;
+  }
+  .overdue-banner {
+    background: #3a1a1a;
+    color: #ef9a9a;
+  }
+  .reminder-banner {
+    background: #3a2a00;
+  }
+}
